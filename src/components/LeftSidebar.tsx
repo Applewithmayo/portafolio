@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion';
-import { FiGithub, FiLinkedin } from 'react-icons/fi';
+import { FiGithub, FiLinkedin, FiInstagram } from 'react-icons/fi';
 
 const LeftSidebar = () => {
   return (
@@ -20,6 +20,11 @@ const LeftSidebar = () => {
         <li>
           <a href="https://www.linkedin.com/in/edomaldonadodev/" target="_blank" rel="noreferrer" className="text-light-2 hover:text-accent transition-colors">
             <FiLinkedin size={20} />
+          </a>
+        </li>
+        <li>
+          <a href="https://www.instagram.com/applewithmayopoh/" target="_blank" rel="noreferrer" className="text-light-2 hover:text-accent transition-colors">
+            <FiInstagram size={20} />
           </a>
         </li>
       </ul>
