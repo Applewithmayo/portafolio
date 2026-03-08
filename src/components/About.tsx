@@ -73,7 +73,7 @@ const About = () => {
             <div className="relative group">
               <div className="absolute -inset-0.5 bg-accent rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
               <Image
-                src="/profile.png"
+                src="/portafolio/profile.png"
                 alt="Eduardo Maldonado"
                 width={300}
                 height={300}
