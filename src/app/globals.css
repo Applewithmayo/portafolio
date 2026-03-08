@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 1 100% 3.9%;
+    --foreground: 0 0% 98%;
+    /* ... (Shadcn UI color variables will go here, but we'll use our own for now) */
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    /* ... */
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-dark-1 text-light-1;
+  }
+}
