@@ -19,8 +19,8 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Eduardo Maldonado | Odoo & Python Developer",
-  description: "Portfolio of Eduardo Maldonado, a software developer specializing in Odoo & Python solutions.",
+  title: "Eduardo Maldonado | Desarrollador Senior Odoo & Python",
+  description: "Desarrollador Senior Odoo con 6+ años de experiencia. Módulos custom, integraciones API, migraciones y IA aplicada a ERP. Disponible para proyectos freelance.",
 };
 
 export default function RootLayout({
@@ -29,7 +29,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="es" className="dark">
       <body className={cn(inter.variable, robotoMono.variable, "font-sans")}>
         <Header />
         <Background />
