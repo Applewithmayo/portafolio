@@ -7,6 +7,7 @@ import LeftSidebar from "@/components/LeftSidebar";
 import RightSidebar from "@/components/RightSidebar";
 import { cn } from "@/lib/utils";
 import Footer from "@/components/Footer";
+import Providers from "@/components/Providers";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -31,12 +32,14 @@ export default function RootLayout({
   return (
     <html lang="es" className="dark">
       <body className={cn(inter.variable, robotoMono.variable, "font-sans")}>
-        <Header />
-        <Background />
-        <LeftSidebar />
-        <RightSidebar />
-        {children}
-        <Footer />
+        <Providers>
+          <Header />
+          <Background />
+          <LeftSidebar />
+          <RightSidebar />
+          {children}
+          <Footer />
+        </Providers>
       </body>
     </html>
   );
