@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { useInView } from 'react-intersection-observer';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { t } from '@/lib/translations';
 
@@ -31,17 +30,14 @@ type Result = 'jackpot' | 'two' | 'none';
 
 const REACTION_SRCS: Record<Result, string> = {
   jackpot: `${BASE}/laughing-thumbs.png`,
-  two: `${BASE}/winking.png`,
-  none: `${BASE}/crying.png`,
+  two:     `${BASE}/winking.png`,
+  none:    `${BASE}/crying.png`,
 };
 
 function pickTargets(): [number, number, number] {
   const rand = () => Math.floor(Math.random() * N);
   const r = Math.random();
-  if (r < 0.05) {
-    const i = rand();
-    return [i, i, i];
-  }
+  if (r < 0.05) { const i = rand(); return [i, i, i]; }
   if (r < 0.28) {
     const match = rand();
     const other = (match + 1 + Math.floor(Math.random() * (N - 1))) % N;
@@ -62,10 +58,14 @@ function spinReel(
   startDelay: number,
   totalTicks: number,
   onDone: () => void,
+  alive: React.MutableRefObject<boolean>,
+  ids: React.MutableRefObject<ReturnType<typeof setTimeout>[]>,
 ) {
-  setTimeout(() => {
+  const outer = setTimeout(() => {
+    if (!alive.current) return;
     let ticks = 0;
     const tick = () => {
+      if (!alive.current) return;
       ticks++;
       if (ticks >= totalTicks) {
         setter(target);
@@ -73,16 +73,16 @@ function spinReel(
         return;
       }
       setter(prev => (prev + 1) % N);
-      const progress = ticks / totalTicks;
-      const delay = 55 + progress * progress * 165;
-      setTimeout(tick, delay);
+      const delay = 55 + (ticks / totalTicks) ** 2 * 165;
+      const inner = setTimeout(tick, delay);
+      ids.current.push(inner);
     };
     tick();
   }, startDelay);
+  ids.current.push(outer);
 }
 
 export default function SlotMachine() {
-  const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.1 });
   const { lang } = useLanguage();
 
   const [i0, setI0] = useState(0);
@@ -95,15 +95,25 @@ export default function SlotMachine() {
   const [result, setResult] = useState<Result | null>(null);
 
   const doneCount = useRef(0);
+  const alive    = useRef(true);
+  const timeouts = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+      timeouts.current.forEach(clearTimeout);
+    };
+  }, []);
 
   const handleSpin = useCallback(() => {
     if (spinning) return;
+    timeouts.current.forEach(clearTimeout);
+    timeouts.current = [];
+    doneCount.current = 0;
     setSpinning(true);
     setResult(null);
-    setS0(false);
-    setS1(false);
-    setS2(false);
-    doneCount.current = 0;
+    setS0(false); setS1(false); setS2(false);
 
     const [t0, t1, t2] = pickTargets();
 
@@ -111,15 +121,15 @@ export default function SlotMachine() {
       doneCount.current += 1;
       if (doneCount.current === 3) {
         setSpinning(false);
-        if (t0 === t1 && t1 === t2)                          setResult('jackpot');
-        else if (t0 === t1 || t1 === t2 || t0 === t2)       setResult('two');
-        else                                                  setResult('none');
+        if (t0 === t1 && t1 === t2)                        setResult('jackpot');
+        else if (t0 === t1 || t1 === t2 || t0 === t2)     setResult('two');
+        else                                               setResult('none');
       }
     };
 
-    spinReel(setI0, t0, 0,    20, () => { setS0(true); onReelDone(); });
-    spinReel(setI1, t1, 650,  25, () => { setS1(true); onReelDone(); });
-    spinReel(setI2, t2, 1300, 30, () => { setS2(true); onReelDone(); });
+    spinReel(setI0, t0, 0,    20, () => { setS0(true); onReelDone(); }, alive, timeouts);
+    spinReel(setI1, t1, 650,  25, () => { setS1(true); onReelDone(); }, alive, timeouts);
+    spinReel(setI2, t2, 1300, 30, () => { setS2(true); onReelDone(); }, alive, timeouts);
   }, [spinning]);
 
   const reels = [
@@ -132,10 +142,10 @@ export default function SlotMachine() {
 
   return (
     <motion.section
-      ref={ref}
       className="py-24 flex flex-col items-center text-center"
       initial={{ opacity: 0, y: 30 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.1 }}
       transition={{ duration: 0.6 }}
     >
       <p className="font-mono text-accent mb-3 text-sm tracking-widest uppercase">
@@ -159,8 +169,8 @@ export default function SlotMachine() {
               className="w-24 h-24 rounded-xl border-2 overflow-hidden bg-dark-1 flex items-center justify-center"
               style={{
                 borderColor: stopped ? 'rgba(140,112,255,0.25)' : 'rgba(140,112,255,0.7)',
-                boxShadow: stopped ? 'none' : '0 0 14px rgba(140,112,255,0.35)',
-                transition: 'box-shadow 0.3s, border-color 0.3s',
+                boxShadow:   stopped ? 'none' : '0 0 14px rgba(140,112,255,0.35)',
+                transition:  'box-shadow 0.3s, border-color 0.3s',
               }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -169,7 +179,7 @@ export default function SlotMachine() {
                 alt="reel"
                 className="w-20 h-20 object-contain"
                 style={{
-                  filter: stopped ? 'blur(0px)' : 'blur(2.5px)',
+                  filter:     stopped ? 'blur(0px)' : 'blur(2.5px)',
                   transition: stopped ? 'filter 0.25s ease' : 'none',
                 }}
               />
@@ -182,35 +192,36 @@ export default function SlotMachine() {
           disabled={spinning}
           className="w-full py-3 rounded-xl font-bold text-white text-lg transition-all duration-200 active:scale-95"
           style={{
-            background: spinning
-              ? '#302d4e'
-              : 'linear-gradient(135deg, #8c70ff 0%, #00f5ff 100%)',
-            cursor: spinning ? 'not-allowed' : 'pointer',
-            boxShadow: spinning ? 'none' : '0 4px 20px rgba(140,112,255,0.45)',
+            background:  spinning ? '#302d4e' : 'linear-gradient(135deg, #6b4fe0 0%, #8c70ff 100%)',
+            cursor:      spinning ? 'not-allowed' : 'pointer',
+            boxShadow:   spinning ? 'none' : '0 4px 20px rgba(140,112,255,0.45)',
           }}
         >
           {spinning ? tr.spinning : tr.spin}
         </button>
 
-        {result && (
-          <motion.div
-            key={`${result}-${lang}`}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35 }}
-            className="flex items-center gap-4 text-left"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={REACTION_SRCS[result]}
-              alt="reaction"
-              className="w-14 h-14 object-contain flex-shrink-0"
-            />
-            <p className="text-light-1 text-sm leading-snug">
-              {tr[result]}
-            </p>
-          </motion.div>
-        )}
+        <AnimatePresence mode="wait">
+          {result && (
+            <motion.div
+              key={result}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.35 }}
+              className="flex items-center gap-4 text-left"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={REACTION_SRCS[result]}
+                alt="reaction"
+                className="w-14 h-14 object-contain flex-shrink-0"
+              />
+              <p className="text-light-1 text-sm leading-snug">
+                {tr[result]}
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.section>
   );
